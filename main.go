@@ -2,7 +2,8 @@ package main
 
 import (
 	"ecommerce-backend/config"
-	
+	"ecommerce-backend/routes"
+
 	"log"
 	"os"
 
@@ -18,6 +19,8 @@ func main() {
 	config.InitDB()
 
 	r := gin.Default()
+
+	routes.SetupRoutes(r)
 
 	r.GET("/api/ping", func(c *gin.Context) {
 		c.JSON(200, gin.H{
