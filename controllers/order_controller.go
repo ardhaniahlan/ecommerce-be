@@ -19,19 +19,32 @@ func NewOrderController(service services.OrderService) *OrderController {
 func (c *OrderController) Checkout(ctx *gin.Context) {
 	userID := ctx.MustGet("user_id").(string)
 
-	orderID, err := c.service.CheckoutCart(userID)
+	result, err := c.service.CheckoutCart(userID)
 	if err != nil {
 		if err.Error() == "keranjang belanja kosong" {
 			utils.ErrorResponse(ctx, http.StatusBadRequest, "Checkout gagal", err.Error())
 			return
 		}
-		
 		utils.ErrorResponse(ctx, http.StatusInternalServerError, "Gagal memproses pesanan", err.Error())
 		return
 	}
-	responseData := map[string]string{
-		"orderId": orderID,
+
+	utils.SuccessResponse(ctx, http.StatusCreated, "Pesanan berhasil dibuat", result)
+}
+
+func (c *OrderController) Webhook(ctx *gin.Context) {
+	var payload map[string]interface{}
+
+	if err := ctx.ShouldBindJSON(&payload); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Invalid payload"})
+		return
 	}
 
-	utils.SuccessResponse(ctx, http.StatusCreated, "Pesanan berhasil dibuat", responseData)
+	err := c.service.ProcessMidtransWebhook(payload)
+	if err != nil {
+		ctx.JSON(http.StatusForbidden, gin.H{"message": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Webhook processed successfully"})
 }

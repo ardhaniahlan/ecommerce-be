@@ -53,5 +53,7 @@ func SetupRoutes(r *gin.Engine) {
 		{
 			orders.POST("/checkout", orderController.Checkout)
 		}
+
+		api.POST("/payments/webhook", orderController.Webhook)
 	}
 }

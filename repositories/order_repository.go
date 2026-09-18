@@ -9,7 +9,9 @@ import (
 )
 
 type OrderRepository interface {
-	Checkout(userID string) (string, error)
+	Checkout(userID string) (string, float64, error)
+	UpdatePaymentURL(orderID string, paymentURL string) error
+	UpdateOrderStatus(orderID string, status string) error
 }
 
 type orderRepository struct {
@@ -20,10 +22,10 @@ func NewOrderRepository(db *sqlx.DB) OrderRepository {
 	return &orderRepository{db}
 }
 
-func (r *orderRepository) Checkout(userID string) (orderID string, err error) {
+func (r *orderRepository) Checkout(userID string) (orderID string, grossAmount float64, err error) {
 	tx, err := r.db.Beginx()
 	if err != nil {
-		return "", err
+		return "", 0, err
 	}
 
 	defer func() {
@@ -48,29 +50,25 @@ func (r *orderRepository) Checkout(userID string) (orderID string, err error) {
 		WHERE c.user_id = $1
 	`
 	if err = tx.Select(&cartItems, queryCart, userID); err != nil {
-		return "", err
+		return "", 0, err
 	}
 
 	if len(cartItems) == 0 {
-		return "", errors.New("keranjang belanja kosong")
+		return "", 0, errors.New("keranjang belanja kosong")
 	}
 
-	var grossAmount float64
 	for _, item := range cartItems {
 		if item.Quantity > item.Stock {
-			return "", fmt.Errorf("stok produk '%s' tidak mencukupi (sisa: %d, diminta: %d)", item.ProductName, item.Stock, item.Quantity)
+			return "", 0, fmt.Errorf("stok produk '%s' tidak mencukupi", item.ProductName)
 		}
 		grossAmount += (item.UnitPrice * float64(item.Quantity))
 	}
 
 	orderID = fmt.Sprintf("ORD-%d", time.Now().Unix())
 
-	queryOrder := `
-		INSERT INTO orders (id, user_id, gross_amount, payment_status)
-		VALUES ($1, $2, $3, 'Unpaid')
-	`
+	queryOrder := `INSERT INTO orders (id, user_id, gross_amount, payment_status) VALUES ($1, $2, $3, 'Unpaid')`
 	if _, err = tx.Exec(queryOrder, orderID, userID, grossAmount); err != nil {
-		return "", err
+		return "", 0, err
 	}
 
 	queryOrderItem := `INSERT INTO order_items (order_id, product_id, product_name, unit_price, quantity) VALUES ($1, $2, $3, $4, $5)`
@@ -79,21 +77,40 @@ func (r *orderRepository) Checkout(userID string) (orderID string, err error) {
 
 	for _, item := range cartItems {
 		if _, err = tx.Exec(queryOrderItem, orderID, item.ProductID, item.ProductName, item.UnitPrice, item.Quantity); err != nil {
-			return "", err
+			return "", 0, err
 		}
-
 		if _, err = tx.Exec(queryUpdateStock, item.Quantity, item.ProductID); err != nil {
-			return "", err
+			return "", 0, err
 		}
-
 		if _, err = tx.Exec(queryDeleteCart, item.CartID); err != nil {
-			return "", err
+			return "", 0, err
 		}
 	}
 
 	if err = tx.Commit(); err != nil {
-		return "", err
+		return "", 0, err
 	}
 
-	return orderID, nil
+	return orderID, grossAmount, nil
+}
+
+func (r *orderRepository) UpdatePaymentURL(orderID string, paymentURL string) error {
+	query := `UPDATE orders SET payment_url = $1 WHERE id = $2`
+	_, err := r.db.Exec(query, paymentURL, orderID)
+	return err
+}
+
+func (r *orderRepository) UpdateOrderStatus(orderID string, status string) error {
+	query := `UPDATE orders SET payment_status = $1 WHERE id = $2`
+	result, err := r.db.Exec(query, status, orderID)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, _ := result.RowsAffected()
+	if rowsAffected == 0 {
+		return fmt.Errorf("pesanan dengan ID %s tidak ditemukan di database", orderID)
+	}
+
+	return nil
 }
