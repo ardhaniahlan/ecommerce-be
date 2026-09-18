@@ -59,9 +59,10 @@ func SetupRoutes(r *gin.Engine) {
 			cart.PUT("/:id", cartController.UpdateQuantity)
 		}
 
-		orders := api.Group("/orders", middlewares.RequireAuth())
+		userOrders := api.Group("/orders", middlewares.RequireAuth())
 		{
-			orders.POST("/checkout", orderController.Checkout)
+			userOrders.POST("/checkout", orderController.Checkout)
+			userOrders.GET("/history", orderController.GetUserHistory)
 		}
 
 		api.POST("/payments/webhook", orderController.Webhook)

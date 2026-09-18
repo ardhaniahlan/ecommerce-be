@@ -23,6 +23,8 @@ type OrderService interface {
 
 	GetAllOrdersAdmin() ([]dto.AdminOrderResponse, error)
 	InputTrackingNumber(orderID string, req dto.TrackingRequest) error
+
+	GetUserOrderHistory(userID string) ([]dto.AdminOrderResponse, error)
 }
 
 type orderService struct {
@@ -105,4 +107,8 @@ func (s *orderService) GetAllOrdersAdmin() ([]dto.AdminOrderResponse, error) {
 
 func (s *orderService) InputTrackingNumber(orderID string, req dto.TrackingRequest) error {
 	return s.repo.UpdateTrackingNumber(orderID, req.TrackingNumber)
+}
+
+func (s *orderService) GetUserOrderHistory(userID string) ([]dto.AdminOrderResponse, error) {
+	return s.repo.GetUserOrders(userID)
 }

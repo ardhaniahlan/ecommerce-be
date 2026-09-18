@@ -75,3 +75,19 @@ func (c *OrderController) InputTracking(ctx *gin.Context) {
 
 	utils.SuccessResponse(ctx, http.StatusOK, "Nomor resi berhasil disimpan dan status menjadi Shipped", nil)
 }
+
+func (c *OrderController) GetUserHistory(ctx *gin.Context) {
+	userID := ctx.MustGet("user_id").(string)
+
+	orders, err := c.service.GetUserOrderHistory(userID)
+	if err != nil {
+		utils.ErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengambil riwayat pesanan", err.Error())
+		return
+	}
+
+	if orders == nil {
+		orders = []dto.AdminOrderResponse{}
+	}
+
+	utils.SuccessResponse(ctx, http.StatusOK, "Berhasil mengambil riwayat pesanan", orders)
+}

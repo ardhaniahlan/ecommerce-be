@@ -16,6 +16,8 @@ type OrderRepository interface {
 
 	GetAllOrders() ([]dto.AdminOrderResponse, error)
 	UpdateTrackingNumber(orderID, trackingNumber string) error
+
+	GetUserOrders(userID string) ([]dto.AdminOrderResponse, error)
 }
 
 type orderRepository struct {
@@ -199,4 +201,35 @@ func (r *orderRepository) UpdateTrackingNumber(orderID, trackingNumber string) e
 	}
 
 	return nil
+}
+
+func (r *orderRepository) GetUserOrders(userID string) ([]dto.AdminOrderResponse, error) {
+	var orders []dto.AdminOrderResponse
+	
+	queryOrders := `
+		SELECT id, user_id, gross_amount, payment_status, shipping_address, tracking_number 
+		FROM orders 
+		WHERE user_id = $1 
+		ORDER BY id DESC
+	`
+	err := r.db.Select(&orders, queryOrders, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	for i := range orders {
+		var items []dto.AdminOrderItem
+		queryItems := `
+			SELECT product_id, product_name, unit_price, quantity 
+			FROM order_items WHERE order_id = $1
+		`
+		err = r.db.Select(&items, queryItems, orders[i].ID)
+		if err == nil {
+			orders[i].Items = items
+		} else {
+			orders[i].Items = []dto.AdminOrderItem{}
+		}
+	}
+
+	return orders, nil
 }
