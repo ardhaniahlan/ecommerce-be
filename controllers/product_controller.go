@@ -36,13 +36,26 @@ func (c *ProductController) Create(ctx *gin.Context) {
 }
 
 func (c *ProductController) GetAll(ctx *gin.Context) {
-	products, err := c.service.GetAllProducts()
+	page, err := strconv.Atoi(ctx.DefaultQuery("page", "1"))
+	if err != nil || page < 1 {
+		page = 1
+	}
+
+	limit, err := strconv.Atoi(ctx.DefaultQuery("limit", "10"))
+	if err != nil || limit < 1 || limit > 100 {
+		limit = 10
+	}
+
+	search := ctx.Query("search")
+
+
+	products, meta, err := c.service.GetAllProducts(page, limit, search)
 	if err != nil {
 		utils.ErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengambil data produk", err.Error())
 		return
 	}
 
-	utils.SuccessResponse(ctx, http.StatusOK, "Daftar produk berhasil diambil", products)
+	utils.SuccessResponseWithMeta(ctx, http.StatusOK, "Daftar produk berhasil diambil", products, meta)
 }
 
 func (c *ProductController) GetByID(ctx *gin.Context) {

@@ -4,11 +4,12 @@ import (
 	"ecommerce-backend/dto"
 	"ecommerce-backend/models"
 	"ecommerce-backend/repositories"
+	"ecommerce-backend/utils"
 )
 
 type ProductService interface {
 	CreateProduct(input dto.CreateProductInput) (models.Product, error)
-	GetAllProducts() ([]models.Product, error)
+	GetAllProducts(page int, limit int, search string) ([]models.Product, utils.Pagination, error)
 	GetProductByID(id int) (models.Product, error)
 	UpdateProduct(id int, input dto.CreateProductInput) (models.Product, error)
 	DeleteProduct(id int) error
@@ -35,8 +36,13 @@ func (s *productService) CreateProduct(input dto.CreateProductInput) (models.Pro
 	return product, err
 }
 
-func (s *productService) GetAllProducts() ([]models.Product, error) {
-	return s.repo.GetAll()
+func (s *productService) GetAllProducts(page, limit int, search string) ([]models.Product, utils.Pagination, error) {
+	products, totalItems, err := s.repo.GetAll(page, limit, search)
+	if err != nil {
+		return nil, utils.Pagination{}, err
+	}
+	meta := utils.GeneratePagination(page, limit, totalItems)
+	return products, meta, nil
 }
 
 func (s *productService) GetProductByID(id int) (models.Product, error) {
