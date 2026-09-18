@@ -19,6 +19,10 @@ func SetupRoutes(r *gin.Engine) {
 	cartService := services.NewCartService(cartRepo)
 	cartController := controllers.NewCartController(cartService)
 
+	orderRepo := repositories.NewOrderRepository(config.DB)
+	orderService := services.NewOrderService(orderRepo)
+	orderController := controllers.NewOrderController(orderService)
+
 	api := r.Group("/api")
 	{
 		auth := api.Group("/auth")
@@ -43,6 +47,11 @@ func SetupRoutes(r *gin.Engine) {
 			cart.POST("/", cartController.AddItem)
 			cart.DELETE("/:id", cartController.RemoveItem)
 			cart.PUT("/:id", cartController.UpdateQuantity)
+		}
+
+		orders := api.Group("/orders", middlewares.RequireAuth())
+		{
+			orders.POST("/checkout", orderController.Checkout)
 		}
 	}
 }
