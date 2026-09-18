@@ -25,6 +25,7 @@ type OrderService interface {
 	InputTrackingNumber(orderID string, req dto.TrackingRequest) error
 
 	GetUserOrderHistory(userID string) ([]dto.AdminOrderResponse, error)
+	CompleteOrder(orderID, userID string) error
 }
 
 type orderService struct {
@@ -111,4 +112,8 @@ func (s *orderService) InputTrackingNumber(orderID string, req dto.TrackingReque
 
 func (s *orderService) GetUserOrderHistory(userID string) ([]dto.AdminOrderResponse, error) {
 	return s.repo.GetUserOrders(userID)
+}
+
+func (s *orderService) CompleteOrder(orderID, userID string) error {
+	return s.repo.CompleteOrder(orderID, userID)
 }

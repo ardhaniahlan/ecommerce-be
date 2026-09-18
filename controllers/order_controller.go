@@ -91,3 +91,15 @@ func (c *OrderController) GetUserHistory(ctx *gin.Context) {
 
 	utils.SuccessResponse(ctx, http.StatusOK, "Berhasil mengambil riwayat pesanan", orders)
 }
+
+func (c *OrderController) CompleteOrder(ctx *gin.Context) {
+	userID := ctx.MustGet("user_id").(string)
+	orderID := ctx.Param("id")
+
+	if err := c.service.CompleteOrder(orderID, userID); err != nil {
+		utils.ErrorResponse(ctx, http.StatusBadRequest, "Gagal menyelesaikan pesanan", err.Error())
+		return
+	}
+
+	utils.SuccessResponse(ctx, http.StatusOK, "Pesanan berhasil diselesaikan", nil)
+}

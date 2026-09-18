@@ -18,6 +18,7 @@ type OrderRepository interface {
 	UpdateTrackingNumber(orderID, trackingNumber string) error
 
 	GetUserOrders(userID string) ([]dto.AdminOrderResponse, error)
+	CompleteOrder(orderID, userID string) error
 }
 
 type orderRepository struct {
@@ -232,4 +233,23 @@ func (r *orderRepository) GetUserOrders(userID string) ([]dto.AdminOrderResponse
 	}
 
 	return orders, nil
+}
+
+func (r *orderRepository) CompleteOrder(orderID, userID string) error {
+	query := `
+		UPDATE orders 
+		SET payment_status = 'Completed' 
+		WHERE id = $1 AND user_id = $2 AND payment_status = 'Shipped'
+	`
+	result, err := r.db.Exec(query, orderID, userID)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, _ := result.RowsAffected()
+	if rowsAffected == 0 {
+		return fmt.Errorf("pesanan tidak ditemukan atau barang belum dikirim (status bukan Shipped)")
+	}
+
+	return nil
 }
