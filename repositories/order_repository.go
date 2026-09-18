@@ -1,6 +1,7 @@
 package repositories
 
 import (
+	"ecommerce-backend/dto"
 	"errors"
 	"fmt"
 	"time"
@@ -12,6 +13,9 @@ type OrderRepository interface {
 	Checkout(userID string) (string, float64, error)
 	UpdatePaymentURL(orderID string, paymentURL string) error
 	UpdateOrderStatus(orderID string, status string, midtransID, payMethod string) error
+
+	GetAllOrders() ([]dto.AdminOrderResponse, error)
+	UpdateTrackingNumber(orderID, trackingNumber string) error
 }
 
 type orderRepository struct {
@@ -145,6 +149,35 @@ func (r *orderRepository) UpdateOrderStatus(orderID string, status string, midtr
 	rowsAffected, _ := result.RowsAffected()
 	if rowsAffected == 0 {
 		return fmt.Errorf("pesanan dengan ID %s tidak ditemukan di database", orderID)
+	}
+
+	return nil
+}
+
+func (r *orderRepository) GetAllOrders() ([]dto.AdminOrderResponse, error) {
+	var orders []dto.AdminOrderResponse
+	query := `
+		SELECT id, user_id, gross_amount, payment_status, shipping_address, tracking_number 
+		FROM orders ORDER BY id DESC
+	`
+	err := r.db.Select(&orders, query)
+	return orders, err
+}
+
+func (r *orderRepository) UpdateTrackingNumber(orderID, trackingNumber string) error {
+	query := `
+		UPDATE orders 
+		SET tracking_number = $1, payment_status = 'Shipped' 
+		WHERE id = $2 AND payment_status = 'Paid'
+	`
+	result, err := r.db.Exec(query, trackingNumber, orderID)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, _ := result.RowsAffected()
+	if rowsAffected == 0 {
+		return fmt.Errorf("pesanan tidak ditemukan atau belum dibayar (status bukan Paid)")
 	}
 
 	return nil

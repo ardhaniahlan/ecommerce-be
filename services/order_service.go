@@ -2,6 +2,7 @@ package services
 
 import (
 	"crypto/sha512"
+	"ecommerce-backend/dto"
 	"ecommerce-backend/repositories"
 	"encoding/hex"
 	"fmt"
@@ -19,6 +20,9 @@ type CheckoutResponse struct {
 type OrderService interface {
 	CheckoutCart(userID string) (CheckoutResponse, error)
 	ProcessMidtransWebhook(payload map[string]interface{}) error
+
+	GetAllOrdersAdmin() ([]dto.AdminOrderResponse, error)
+	InputTrackingNumber(orderID string, req dto.TrackingRequest) error
 }
 
 type orderService struct {
@@ -66,7 +70,7 @@ func (s *orderService) ProcessMidtransWebhook(payload map[string]interface{}) er
 	grossAmount, _ := payload["gross_amount"].(string)
 	signatureKey, _ := payload["signature_key"].(string)
 	transactionStatus, _ := payload["transaction_status"].(string)
-	transactionID, _ := payload["transaction_id"].(string) 
+	transactionID, _ := payload["transaction_id"].(string)
 	paymentType, _ := payload["payment_type"].(string)
 
 	serverKey := os.Getenv("MIDTRANS_SERVER_KEY")
@@ -93,4 +97,12 @@ func (s *orderService) ProcessMidtransWebhook(payload map[string]interface{}) er
 	}
 
 	return s.repo.UpdateOrderStatus(orderID, newStatus, transactionID, paymentType)
+}
+
+func (s *orderService) GetAllOrdersAdmin() ([]dto.AdminOrderResponse, error) {
+	return s.repo.GetAllOrders()
+}
+
+func (s *orderService) InputTrackingNumber(orderID string, req dto.TrackingRequest) error {
+	return s.repo.UpdateTrackingNumber(orderID, req.TrackingNumber)
 }

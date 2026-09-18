@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"ecommerce-backend/dto"
 	"ecommerce-backend/services"
 	"ecommerce-backend/utils"
 	"net/http"
@@ -47,4 +48,31 @@ func (c *OrderController) Webhook(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Webhook processed successfully"})
+}
+
+func (c *OrderController) GetAllOrdersAdmin(ctx *gin.Context) {
+	orders, err := c.service.GetAllOrdersAdmin()
+	if err != nil {
+		utils.ErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengambil daftar pesanan", err.Error())
+		return
+	}
+	utils.SuccessResponse(ctx, http.StatusOK, "Berhasil mengambil semua pesanan", orders)
+}
+
+// Memasukkan nomor resi pengiriman
+func (c *OrderController) InputTracking(ctx *gin.Context) {
+	orderID := ctx.Param("id")
+
+	var req dto.TrackingRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		utils.ErrorResponse(ctx, http.StatusBadRequest, "Nomor resi tidak valid", err.Error())
+		return
+	}
+
+	if err := c.service.InputTrackingNumber(orderID, req); err != nil {
+		utils.ErrorResponse(ctx, http.StatusBadRequest, "Gagal mengupdate resi", err.Error())
+		return
+	}
+
+	utils.SuccessResponse(ctx, http.StatusOK, "Nomor resi berhasil disimpan dan status menjadi Shipped", nil)
 }

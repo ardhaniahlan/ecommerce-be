@@ -65,5 +65,11 @@ func SetupRoutes(r *gin.Engine) {
 		}
 
 		api.POST("/payments/webhook", orderController.Webhook)
+
+		adminOrders := api.Group("/admin/orders", middlewares.RequireAuth(), middlewares.RequireAdmin())
+		{
+			adminOrders.GET("/", orderController.GetAllOrdersAdmin)
+			adminOrders.PUT("/:id/tracking", orderController.InputTracking)
+		}
 	}
 }

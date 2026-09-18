@@ -7,3 +7,4 @@ type CreateProductInput struct {
 	Stock       int     `json:"stock" binding:"required,min=0"`
 	ImageURL    *string `json:"imageUrl"`
 }
+
