@@ -66,6 +66,8 @@ func (s *orderService) ProcessMidtransWebhook(payload map[string]interface{}) er
 	grossAmount, _ := payload["gross_amount"].(string)
 	signatureKey, _ := payload["signature_key"].(string)
 	transactionStatus, _ := payload["transaction_status"].(string)
+	transactionID, _ := payload["transaction_id"].(string) 
+	paymentType, _ := payload["payment_type"].(string)
 
 	serverKey := os.Getenv("MIDTRANS_SERVER_KEY")
 	hashInput := orderID + statusCode + grossAmount + serverKey
@@ -90,5 +92,5 @@ func (s *orderService) ProcessMidtransWebhook(payload map[string]interface{}) er
 		newStatus = "Unknown"
 	}
 
-	return s.repo.UpdateOrderStatus(orderID, newStatus)
+	return s.repo.UpdateOrderStatus(orderID, newStatus, transactionID, paymentType)
 }

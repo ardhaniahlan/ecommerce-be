@@ -11,7 +11,7 @@ import (
 type OrderRepository interface {
 	Checkout(userID string) (string, float64, error)
 	UpdatePaymentURL(orderID string, paymentURL string) error
-	UpdateOrderStatus(orderID string, status string) error
+	UpdateOrderStatus(orderID string, status string, midtransID, payMethod string) error
 }
 
 type orderRepository struct {
@@ -100,9 +100,12 @@ func (r *orderRepository) UpdatePaymentURL(orderID string, paymentURL string) er
 	return err
 }
 
-func (r *orderRepository) UpdateOrderStatus(orderID string, status string) error {
-	query := `UPDATE orders SET payment_status = $1 WHERE id = $2`
-	result, err := r.db.Exec(query, status, orderID)
+func (r *orderRepository) UpdateOrderStatus(orderID string, status string, midtransID, payMethod string) error {
+	query := `UPDATE orders 
+	          SET payment_status = $1, midtrans_transaction_id = $2, payment_method = $3 
+	          WHERE id = $4`
+
+	result, err := r.db.Exec(query, status, midtransID, payMethod, orderID)
 	if err != nil {
 		return err
 	}
