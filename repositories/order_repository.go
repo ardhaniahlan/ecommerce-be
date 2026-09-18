@@ -72,16 +72,24 @@ func (r *orderRepository) Checkout(userID string) (orderID string, grossAmount f
 	}
 
 	queryOrderItem := `INSERT INTO order_items (order_id, product_id, product_name, unit_price, quantity) VALUES ($1, $2, $3, $4, $5)`
-	queryUpdateStock := `UPDATE products SET stock = stock - $1 WHERE id = $2`
 	queryDeleteCart := `DELETE FROM cart_items WHERE id = $1`
+	queryUpdateStock := `UPDATE products SET stock = stock - $1 WHERE id = $2 AND stock >= $1`
 
 	for _, item := range cartItems {
 		if _, err = tx.Exec(queryOrderItem, orderID, item.ProductID, item.ProductName, item.UnitPrice, item.Quantity); err != nil {
 			return "", 0, err
 		}
-		if _, err = tx.Exec(queryUpdateStock, item.Quantity, item.ProductID); err != nil {
+
+		result, err := tx.Exec(queryUpdateStock, item.Quantity, item.ProductID)
+		if err != nil {
 			return "", 0, err
 		}
+
+		rowsAffected, _ := result.RowsAffected()
+		if rowsAffected == 0 {
+			return "", 0, fmt.Errorf("checkout dibatalkan: ada user lain yang baru saja memborong '%s', stok tidak lagi mencukupi", item.ProductName)
+		}
+
 		if _, err = tx.Exec(queryDeleteCart, item.CartID); err != nil {
 			return "", 0, err
 		}
