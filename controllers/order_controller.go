@@ -59,7 +59,6 @@ func (c *OrderController) GetAllOrdersAdmin(ctx *gin.Context) {
 	utils.SuccessResponse(ctx, http.StatusOK, "Berhasil mengambil semua pesanan", orders)
 }
 
-// Memasukkan nomor resi pengiriman
 func (c *OrderController) InputTracking(ctx *gin.Context) {
 	orderID := ctx.Param("id")
 

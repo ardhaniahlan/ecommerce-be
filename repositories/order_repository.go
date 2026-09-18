@@ -156,11 +156,29 @@ func (r *orderRepository) UpdateOrderStatus(orderID string, status string, midtr
 
 func (r *orderRepository) GetAllOrders() ([]dto.AdminOrderResponse, error) {
 	var orders []dto.AdminOrderResponse
-	query := `
+	queryOrders := `
 		SELECT id, user_id, gross_amount, payment_status, shipping_address, tracking_number 
-		FROM orders ORDER BY id DESC
+		FROM orders ORDER BY order_date DESC
 	`
-	err := r.db.Select(&orders, query)
+	err := r.db.Select(&orders, queryOrders)
+	if err != nil {
+		return nil, err
+	}
+
+	for i := range orders {
+		var items []dto.AdminOrderItem
+		queryItems := `
+			SELECT product_id, product_name, unit_price, quantity 
+			FROM order_items WHERE order_id = $1
+		`
+		err = r.db.Select(&items, queryItems, orders[i].ID)
+		if err == nil {
+			orders[i].Items = items
+		} else {
+			orders[i].Items = []dto.AdminOrderItem{}
+		}
+	}
+	
 	return orders, err
 }
 
