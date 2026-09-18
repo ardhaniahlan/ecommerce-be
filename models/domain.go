@@ -3,13 +3,18 @@ package models
 import "time"
 
 type User struct {
-	ID           string    `db:"id" json:"id"`
-	FullName     string    `db:"full_name" json:"fullName"`
-	Email        string    `db:"email" json:"email"`
-	PasswordHash string    `db:"password_hash" json:"-"`
-	Role         string    `db:"role" json:"role"`
-	Address      *string   `db:"address" json:"address,omitempty"`
-	CreatedAt    time.Time `db:"created_at" json:"createdAt"`
+	ID            string    `db:"id" json:"id"`
+	FullName      string    `db:"full_name" json:"fullName"`
+	Email         string    `db:"email" json:"email"`
+	PasswordHash  string    `db:"password_hash" json:"-"`
+	Role          string    `db:"role" json:"role"`
+	Phone         *string   `db:"phone" json:"phone,omitempty"`
+	Province      *string   `db:"province" json:"province,omitempty"`
+	City          *string   `db:"city" json:"city,omitempty"`
+	District      *string   `db:"district" json:"district,omitempty"`
+	PostalCode    *string   `db:"postal_code" json:"postalCode,omitempty"`
+	StreetAddress *string   `db:"street_address" json:"streetAddress,omitempty"`
+	CreatedAt     time.Time `db:"created_at" json:"createdAt"`
 }
 
 type Product struct {

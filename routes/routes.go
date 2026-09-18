@@ -23,12 +23,22 @@ func SetupRoutes(r *gin.Engine) {
 	orderService := services.NewOrderService(orderRepo)
 	orderController := controllers.NewOrderController(orderService)
 
+	userRepo := repositories.NewUserRepository(config.DB)
+	service := services.NewUserService(userRepo)
+	userController := controllers.NewUserController(service)
+
 	api := r.Group("/api")
 	{
 		auth := api.Group("/auth")
 		{
 			auth.POST("/register", controllers.Register)
 			auth.POST("/login", controllers.Login)
+		}
+
+		users := api.Group("/users", middlewares.RequireAuth())
+		{
+			users.GET("/profile", userController.GetProfile)
+			users.PUT("/profile", userController.UpdateProfile)
 		}
 
 		products := api.Group("/products")

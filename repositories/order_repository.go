@@ -28,6 +28,27 @@ func (r *orderRepository) Checkout(userID string) (orderID string, grossAmount f
 		return "", 0, err
 	}
 
+	var user struct {
+		Phone         *string `db:"phone"`
+		Province      *string `db:"province"`
+		City          *string `db:"city"`
+		District      *string `db:"district"`
+		PostalCode    *string `db:"postal_code"`
+		StreetAddress *string `db:"street_address"`
+	}
+
+	err = tx.Get(&user, "SELECT phone, province, city, district, postal_code, street_address FROM users WHERE id = $1", userID)
+	if err != nil {
+		return "", 0, err
+	}
+
+	if user.Phone == nil || user.Province == nil || user.StreetAddress == nil {
+		return "", 0, errors.New("alamat pengiriman belum lengkap, harap update profil Anda terlebih dahulu")
+	}
+
+	fullShippingAddress := fmt.Sprintf("%s, %s, %s, %s, %s. (HP: %s)",
+		*user.StreetAddress, *user.District, *user.City, *user.Province, *user.PostalCode, *user.Phone)
+
 	defer func() {
 		if err != nil {
 			tx.Rollback()
@@ -66,8 +87,11 @@ func (r *orderRepository) Checkout(userID string) (orderID string, grossAmount f
 
 	orderID = fmt.Sprintf("ORD-%d", time.Now().Unix())
 
-	queryOrder := `INSERT INTO orders (id, user_id, gross_amount, payment_status) VALUES ($1, $2, $3, 'Unpaid')`
-	if _, err = tx.Exec(queryOrder, orderID, userID, grossAmount); err != nil {
+	queryOrder := `
+		INSERT INTO orders (id, user_id, gross_amount, payment_status, shipping_address) 
+		VALUES ($1, $2, $3, 'Unpaid', $4)
+	`
+	if _, err = tx.Exec(queryOrder, orderID, userID, grossAmount, fullShippingAddress); err != nil {
 		return "", 0, err
 	}
 
