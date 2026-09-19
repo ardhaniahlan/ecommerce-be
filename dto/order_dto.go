@@ -21,3 +21,10 @@ type AdminOrderResponse struct {
 type TrackingRequest struct {
 	TrackingNumber string `json:"tracking_number" binding:"required"`
 }
+
+type AdminDashboardStats struct {
+	TotalRevenue    float64 `json:"total_revenue"`
+	OrdersToProcess int     `json:"orders_to_process"`
+	TotalProducts   int     `json:"total_products"`
+	TotalUsers      int     `json:"total_users"`
+}

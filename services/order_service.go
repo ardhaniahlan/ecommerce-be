@@ -26,6 +26,8 @@ type OrderService interface {
 
 	GetUserOrderHistory(userID string) ([]dto.AdminOrderResponse, error)
 	CompleteOrder(orderID, userID string) error
+
+	GetAdminStats() (dto.AdminDashboardStats, error)
 }
 
 type orderService struct {
@@ -116,4 +118,8 @@ func (s *orderService) GetUserOrderHistory(userID string) ([]dto.AdminOrderRespo
 
 func (s *orderService) CompleteOrder(orderID, userID string) error {
 	return s.repo.CompleteOrder(orderID, userID)
+}
+
+func (s *orderService) GetAdminStats() (dto.AdminDashboardStats, error) {
+	return s.repo.GetDashboardStats()
 }

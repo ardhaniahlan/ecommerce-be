@@ -103,3 +103,13 @@ func (c *OrderController) CompleteOrder(ctx *gin.Context) {
 
 	utils.SuccessResponse(ctx, http.StatusOK, "Pesanan berhasil diselesaikan", nil)
 }
+
+func (c *OrderController) GetStats(ctx *gin.Context) {
+	stats, err := c.service.GetAdminStats()
+	if err != nil {
+		utils.ErrorResponse(ctx, http.StatusInternalServerError, "Gagal mengambil statistik dashboard", err.Error())
+		return
+	}
+
+	utils.SuccessResponse(ctx, http.StatusOK, "Berhasil mengambil statistik", stats)
+}

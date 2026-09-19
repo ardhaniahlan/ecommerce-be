@@ -19,6 +19,8 @@ type OrderRepository interface {
 
 	GetUserOrders(userID string) ([]dto.AdminOrderResponse, error)
 	CompleteOrder(orderID, userID string) error
+
+	GetDashboardStats() (dto.AdminDashboardStats, error)
 }
 
 type orderRepository struct {
@@ -252,4 +254,26 @@ func (r *orderRepository) CompleteOrder(orderID, userID string) error {
 	}
 
 	return nil
+}
+
+func (r *orderRepository) GetDashboardStats() (dto.AdminDashboardStats, error) {
+	var stats dto.AdminDashboardStats
+
+	err := r.db.Get(&stats.TotalRevenue, `
+		SELECT COALESCE(SUM(gross_amount), 0) 
+		FROM orders 
+		WHERE payment_status IN ('Paid', 'Shipped', 'Completed')
+	`)
+	if err != nil { return stats, err }
+
+	err = r.db.Get(&stats.OrdersToProcess, "SELECT COUNT(id) FROM orders WHERE payment_status = 'Paid'")
+	if err != nil { return stats, err }
+
+	err = r.db.Get(&stats.TotalProducts, "SELECT COUNT(id) FROM products")
+	if err != nil { return stats, err }
+
+	err = r.db.Get(&stats.TotalUsers, "SELECT COUNT(id) FROM users WHERE role = 'user'")
+	if err != nil { return stats, err }
+
+	return stats, nil
 }
