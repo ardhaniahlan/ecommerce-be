@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"ecommerce-backend/dto"
-	"ecommerce-backend/repositories"
 	"ecommerce-backend/services"
 	"ecommerce-backend/utils"
 	"net/http"
@@ -46,7 +45,7 @@ func (c *CartController) GetCart(ctx *gin.Context) {
 	}
 
 	if items == nil {
-		items = []repositories.CartItemResponse{}
+		items = []dto.CartItemResponse{}
 	}
 
 	utils.SuccessResponse(ctx, http.StatusOK, "Data keranjang berhasil diambil", items)

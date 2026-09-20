@@ -2,29 +2,15 @@ package repositories
 
 import (
 	"database/sql"
+	"ecommerce-backend/dto"
 	"errors"
-	"time"
 
 	"github.com/jmoiron/sqlx"
 )
 
-type CartItemResponse struct {
-	ID                 int        `db:"id" json:"id"`
-	ProductID          int        `db:"product_id" json:"productId"`
-	ProductName        string     `db:"name" json:"productName"`
-	OriginalPrice      float64    `db:"price" json:"originalPrice"`
-	ActivePrice        float64    `json:"activePrice"`
-	DiscountPercentage int        `db:"discount_percentage" json:"discountPercentage"`
-	DiscountStart      *time.Time `db:"discount_start" json:"-"`
-	DiscountEnd        *time.Time `db:"discount_end" json:"-"`
-	ImageURL           *string    `db:"image_url" json:"imageUrl"`
-	Quantity           int        `db:"quantity" json:"quantity"`
-	Subtotal           float64    `json:"subtotal"`
-}
-
 type CartRepository interface {
 	AddToCart(userID string, productID int, quantity int) error
-	GetCartByUserID(userID string) ([]CartItemResponse, error)
+	GetCartByUserID(userID string) ([]dto.CartItemResponse, error)
 	RemoveFromCart(cartID int, userID string) error
 	UpdateCartItemQuantity(cartID int, userID string, quantity int) error
 }
@@ -70,8 +56,8 @@ func (r *cartRepository) AddToCart(userID string, productID int, quantity int) e
 	return err
 }
 
-func (r *cartRepository) GetCartByUserID(userID string) ([]CartItemResponse, error) {
-	var items []CartItemResponse
+func (r *cartRepository) GetCartByUserID(userID string) ([]dto.CartItemResponse, error) {
+	var items []dto.CartItemResponse
 
 	query := `
 		SELECT c.id, c.product_id, p.name, p.price, p.discount_percentage, p.discount_start, p.discount_end, p.image_url, c.quantity 

@@ -38,7 +38,6 @@ func (r *orderRepository) Checkout(userID string, voucherCode string) (orderID s
 		return "", 0, err
 	}
 
-	// === 1. GET USER ADDRESS ===
 	var user struct {
 		Phone         *string `db:"phone"`
 		Province      *string `db:"province"`
@@ -60,14 +59,12 @@ func (r *orderRepository) Checkout(userID string, voucherCode string) (orderID s
 	fullShippingAddress := fmt.Sprintf("%s, %s, %s, %s, %s. (HP: %s)",
 		*user.StreetAddress, *user.District, *user.City, *user.Province, *user.PostalCode, *user.Phone)
 
-	// Defer Rollback yang sangat aman
 	defer func() {
 		if err != nil {
 			tx.Rollback()
 		}
 	}()
 
-	// === 2. GET CART ITEMS (DITAMBAH KOLOM DISKON PRODUK) ===
 	var cartItems []struct {
 		CartID             int        `db:"cart_id"`
 		ProductID          int        `db:"product_id"`
@@ -78,7 +75,7 @@ func (r *orderRepository) Checkout(userID string, voucherCode string) (orderID s
 		DiscountPercentage int        `db:"discount_percentage"`
 		DiscountStart      *time.Time `db:"discount_start"`
 		DiscountEnd        *time.Time `db:"discount_end"`
-		ActivePrice        float64    // Dihitung manual di bawah, tidak dari DB
+		ActivePrice        float64    
 	}
 
 	queryCart := `

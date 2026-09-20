@@ -7,7 +7,7 @@ import (
 
 type CartService interface {
 	AddToCart(userID string, input dto.AddToCartInput) error
-	GetCartItems(userID string) ([]repositories.CartItemResponse, error)
+	GetCartItems(userID string) ([]dto.CartItemResponse, error)
 	RemoveItem(cartID int, userID string) error
 	UpdateItemQuantity(cartID int, userID string, quantity int) error
 }
@@ -24,7 +24,7 @@ func (s *cartService) AddToCart(userID string, input dto.AddToCartInput) error {
 	return s.repo.AddToCart(userID, input.ProductID, input.Quantity)
 }
 
-func (s *cartService) GetCartItems(userID string) ([]repositories.CartItemResponse, error) {
+func (s *cartService) GetCartItems(userID string) ([]dto.CartItemResponse, error) {
 	return s.repo.GetCartByUserID(userID)
 }
 
