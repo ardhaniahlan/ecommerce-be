@@ -8,10 +8,10 @@ import (
 )
 
 type ProductRepository interface {
-	Create(product *models.Product) error
+	Create(product *models.Product, imageURLs []string) error
 	GetAll(page int, limit int, search string) ([]models.Product, int, error)
 	GetByID(id int) (models.Product, error)
-	Update(product *models.Product) error
+	Update(product *models.Product, imageURLs []string) error
 	Delete(id int) error
 }
 
@@ -23,22 +23,48 @@ func NewProductRepository(db *sqlx.DB) ProductRepository {
 	return &productRepository{db}
 }
 
-func (r *productRepository) Create(product *models.Product) error {
-	query := `
-	INSERT INTO products (id, name, description, price, stock, discount_percentage, discount_start, discount_end) 
-	VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-`
-
-	rows, err := r.db.NamedQuery(query, product)
+func (r *productRepository) Create(product *models.Product, imageURLs []string) error {
+	tx, err := r.db.Beginx()
 	if err != nil {
 		return err
 	}
-	defer rows.Close()
 
-	if rows.Next() {
-		err = rows.StructScan(product)
+	queryProduct := `
+		INSERT INTO products (name, description, price, stock, discount_percentage, discount_start, discount_end) 
+		VALUES ($1, $2, $3, $4, $5, $6, $7) 
+		RETURNING id
+	`
+
+	err = tx.QueryRow(queryProduct,
+		product.Name,
+		product.Description,
+		product.Price,
+		product.Stock,
+		product.DiscountPercentage,
+		product.DiscountStart,
+		product.DiscountEnd,
+	).Scan(&product.ID)
+
+	if err != nil {
+		tx.Rollback()
+		return err
 	}
-	return err
+
+	queryImage := `INSERT INTO product_images (product_id, image_url, is_primary) VALUES ($1, $2, $3)`
+
+	for i, url := range imageURLs {
+		isPrimary := false
+		if i == 0 {
+			isPrimary = true
+		}
+
+		if _, err = tx.Exec(queryImage, product.ID, url, isPrimary); err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	return tx.Commit()
 }
 
 func (r *productRepository) GetAll(page int, limit int, search string) ([]models.Product, int, error) {
@@ -55,11 +81,14 @@ func (r *productRepository) GetAll(page int, limit int, search string) ([]models
 		return nil, 0, err
 	}
 
-	query := `SELECT id, name, description, price, stock, image_url, is_active, created_at 
-	FROM products 
-	WHERE is_active = true AND name ILIKE $1 
-	ORDER BY created_at DESC
-	LIMIT $2 OFFSET $3`
+	query := `
+		SELECT p.id, p.name, p.description, p.price, p.stock, p.is_active, p.created_at,
+		       pi.image_url 
+		FROM products p
+		LEFT JOIN product_images pi ON p.id = pi.product_id AND pi.is_primary = true
+		WHERE p.is_active = true AND p.name ILIKE $1 
+		ORDER BY p.created_at DESC
+		LIMIT $2 OFFSET $3`
 
 	err = r.db.Select(&products, query, searchParam, limit, offset)
 	return products, totalItems, err
@@ -67,29 +96,76 @@ func (r *productRepository) GetAll(page int, limit int, search string) ([]models
 
 func (r *productRepository) GetByID(id int) (models.Product, error) {
 	var product models.Product
-	query := `SELECT id, name, description, price, stock, image_url, discount_percentage, discount_start, discount_end, is_active, created_at FROM products WHERE id = $1`
-	err := r.db.Get(&product, query, id)
-	return product, err
+	
+	queryProduct := `SELECT id, name, description, price, stock, discount_percentage, discount_start, discount_end, is_active, created_at FROM products WHERE id = $1`
+	err := r.db.Get(&product, queryProduct, id)
+	if err != nil {
+		return product, err
+	}
+
+	var images []models.ProductImage
+	queryImages := `SELECT id, product_id, image_url, is_primary FROM product_images WHERE product_id = $1 ORDER BY is_primary DESC`
+	
+	err = r.db.Select(&images, queryImages, id)
+	if err != nil {
+		return product, err
+	}
+
+	product.Images = images
+
+	return product, nil
 }
 
-func (r *productRepository) Update(product *models.Product) error {
-	query := `
-		UPDATE products 
-		SET name = :name, description = :description, price = :price, stock = :stock, image_url = :image_url, 
-			discount_percentage = :discount_percentage, discount_start = :discount_start, discount_end = :discount_end
-		WHERE id = :id 
-		RETURNING is_active, created_at`
-
-	rows, err := r.db.NamedQuery(query, product)
+func (r *productRepository) Update(product *models.Product, imageURLs []string) error {
+	tx, err := r.db.Beginx()
 	if err != nil {
 		return err
 	}
-	defer rows.Close()
 
-	if rows.Next() {
-		err = rows.StructScan(product)
+	queryProduct := `
+		UPDATE products 
+		SET name = $1, description = $2, price = $3, stock = $4, 
+		    discount_percentage = $5, discount_start = $6, discount_end = $7
+		WHERE id = $8 
+		RETURNING is_active, created_at`
+
+	err = tx.QueryRow(queryProduct,
+		product.Name,
+		product.Description,
+		product.Price,
+		product.Stock,
+		product.DiscountPercentage,
+		product.DiscountStart,
+		product.DiscountEnd,
+		product.ID,
+	).Scan(&product.IsActive, &product.CreatedAt)
+
+	if err != nil {
+		tx.Rollback()
+		return err
 	}
-	return err
+
+	if len(imageURLs) > 0 {
+		queryDeleteImages := `DELETE FROM product_images WHERE product_id = $1`
+		if _, err = tx.Exec(queryDeleteImages, product.ID); err != nil {
+			tx.Rollback()
+			return err
+		}
+
+		queryInsertImage := `INSERT INTO product_images (product_id, image_url, is_primary) VALUES ($1, $2, $3)`
+		for i, url := range imageURLs {
+			isPrimary := false
+			if i == 0 {
+				isPrimary = true
+			}
+			if _, err = tx.Exec(queryInsertImage, product.ID, url, isPrimary); err != nil {
+				tx.Rollback()
+				return err
+			}
+		}
+	}
+
+	return tx.Commit()
 }
 
 func (r *productRepository) Delete(id int) error {
@@ -106,5 +182,5 @@ func calculateActivePrice(originalPrice float64, discountPercentage int, start, 
 			return originalPrice - discountAmount, discountPercentage
 		}
 	}
-	return originalPrice, 0 
+	return originalPrice, 0
 }

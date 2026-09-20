@@ -18,18 +18,25 @@ type User struct {
 }
 
 type Product struct {
-	ID          int       `db:"id" json:"id"`
-	Name        string    `db:"name" json:"name"`
-	Description *string   `db:"description" json:"description,omitempty"`
-	Price       float64   `db:"price" json:"price"`
-	Stock       int       `db:"stock" json:"stock"`
-	ImageURL    *string   `db:"image_url" json:"imageUrl,omitempty"`
-	IsActive    bool      `db:"is_active" json:"isActive"`
-	CreatedAt   time.Time `db:"created_at" json:"createdAt"`
+	ID          int            `db:"id" json:"id"`
+	Name        string         `db:"name" json:"name"`
+	Description *string        `db:"description" json:"description,omitempty"`
+	Images      []ProductImage `db:"-" json:"image_url"`
+	Price       float64        `db:"price" json:"price"`
+	Stock       int            `db:"stock" json:"stock"`
+	IsActive    bool           `db:"is_active" json:"isActive"`
+	CreatedAt   time.Time      `db:"created_at" json:"createdAt"`
 
 	DiscountPercentage int        `db:"discount_percentage" json:"discount_percentage"`
 	DiscountStart      *time.Time `db:"discount_start" json:"discount_start"`
 	DiscountEnd        *time.Time `db:"discount_end" json:"discount_end"`
+}
+
+type ProductImage struct {
+	ID        int    `db:"id" json:"id"`
+	ProductID int    `db:"product_id" json:"productId"`
+	ImageURL  string `db:"image_url" json:"image_url"`
+	IsPrimary bool   `db:"is_primary" json:"is_primary"`
 }
 
 type CartItem struct {

@@ -29,13 +29,12 @@ func (s *productService) CreateProduct(input dto.CreateProductInput) (models.Pro
 		Description:        input.Description,
 		Price:              input.Price,
 		Stock:              input.Stock,
-		ImageURL:           input.ImageURL,
 		DiscountPercentage: input.DiscountPercentage,
 		DiscountStart:      input.DiscountStart,
 		DiscountEnd:        input.DiscountEnd,
 	}
 
-	err := s.repo.Create(&product)
+	err := s.repo.Create(&product, input.ImageURLs)
 	return product, err
 }
 
@@ -62,12 +61,11 @@ func (s *productService) UpdateProduct(id int, input dto.CreateProductInput) (mo
 	product.Description = input.Description
 	product.Price = input.Price
 	product.Stock = input.Stock
-	product.ImageURL = input.ImageURL
 	product.DiscountPercentage = input.DiscountPercentage
 	product.DiscountStart = input.DiscountStart
 	product.DiscountEnd = input.DiscountEnd
 
-	err = s.repo.Update(&product)
+	err = s.repo.Update(&product, input.ImageURLs)
 	return product, err
 }
 
