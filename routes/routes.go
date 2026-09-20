@@ -27,6 +27,10 @@ func SetupRoutes(r *gin.Engine) {
 	service := services.NewUserService(userRepo)
 	userController := controllers.NewUserController(service)
 
+	voucherRepo := repositories.NewVoucherRepository(config.DB)
+	voucherService := services.NewVoucherService(voucherRepo)
+	voucherController := controllers.NewVoucherController(voucherService)
+
 	api := r.Group("/api")
 	{
 		auth := api.Group("/auth")
@@ -76,6 +80,12 @@ func SetupRoutes(r *gin.Engine) {
 			{
 				adminOrders.GET("/", orderController.GetAllOrdersAdmin)
 				adminOrders.PUT("/:id/tracking", orderController.InputTracking)
+			}
+
+			voucherRoutes := adminGroup.Group("/vouchers")
+			{
+				voucherRoutes.POST("/", voucherController.CreateVoucher)
+				voucherRoutes.GET("/", voucherController.GetAllVoucher)
 			}
 		}
 	}

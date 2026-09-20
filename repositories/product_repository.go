@@ -24,10 +24,10 @@ func NewProductRepository(db *sqlx.DB) ProductRepository {
 
 func (r *productRepository) Create(product *models.Product) error {
 	query := `
-		INSERT INTO products (name, description, price, stock, image_url) 
-		VALUES (:name, :description, :price, :stock, :image_url) 
-		RETURNING id, is_active, created_at`
-	
+	INSERT INTO products (id, name, description, price, stock, discount_percentage, discount_start, discount_end) 
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+`
+
 	rows, err := r.db.NamedQuery(query, product)
 	if err != nil {
 		return err
@@ -59,14 +59,14 @@ func (r *productRepository) GetAll(page int, limit int, search string) ([]models
 	WHERE is_active = true AND name ILIKE $1 
 	ORDER BY created_at DESC
 	LIMIT $2 OFFSET $3`
-	
+
 	err = r.db.Select(&products, query, searchParam, limit, offset)
 	return products, totalItems, err
 }
 
 func (r *productRepository) GetByID(id int) (models.Product, error) {
 	var product models.Product
-	query := `SELECT id, name, description, price, stock, image_url, is_active, created_at FROM products WHERE id = $1`
+	query := `SELECT id, name, description, price, stock, image_url, discount_percentage, discount_start, discount_end, is_active, created_at FROM products WHERE id = $1`
 	err := r.db.Get(&product, query, id)
 	return product, err
 }
@@ -74,10 +74,11 @@ func (r *productRepository) GetByID(id int) (models.Product, error) {
 func (r *productRepository) Update(product *models.Product) error {
 	query := `
 		UPDATE products 
-		SET name = :name, description = :description, price = :price, stock = :stock, image_url = :image_url 
+		SET name = :name, description = :description, price = :price, stock = :stock, image_url = :image_url, 
+			discount_percentage = :discount_percentage, discount_start = :discount_start, discount_end = :discount_end
 		WHERE id = :id 
 		RETURNING is_active, created_at`
-	
+
 	rows, err := r.db.NamedQuery(query, product)
 	if err != nil {
 		return err

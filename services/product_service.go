@@ -25,11 +25,14 @@ func NewProductService(repo repositories.ProductRepository) ProductService {
 
 func (s *productService) CreateProduct(input dto.CreateProductInput) (models.Product, error) {
 	product := models.Product{
-		Name:        input.Name,
-		Description: input.Description,
-		Price:       input.Price,
-		Stock:       input.Stock,
-		ImageURL:    input.ImageURL,
+		Name:               input.Name,
+		Description:        input.Description,
+		Price:              input.Price,
+		Stock:              input.Stock,
+		ImageURL:           input.ImageURL,
+		DiscountPercentage: input.DiscountPercentage,
+		DiscountStart:      input.DiscountStart,
+		DiscountEnd:        input.DiscountEnd,
 	}
 
 	err := s.repo.Create(&product)
@@ -60,6 +63,9 @@ func (s *productService) UpdateProduct(id int, input dto.CreateProductInput) (mo
 	product.Price = input.Price
 	product.Stock = input.Stock
 	product.ImageURL = input.ImageURL
+	product.DiscountPercentage = input.DiscountPercentage
+	product.DiscountStart = input.DiscountStart
+	product.DiscountEnd = input.DiscountEnd
 
 	err = s.repo.Update(&product)
 	return product, err

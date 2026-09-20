@@ -26,6 +26,10 @@ type Product struct {
 	ImageURL    *string   `db:"image_url" json:"imageUrl,omitempty"`
 	IsActive    bool      `db:"is_active" json:"isActive"`
 	CreatedAt   time.Time `db:"created_at" json:"createdAt"`
+
+	DiscountPercentage int        `db:"discount_percentage" json:"discount_percentage"`
+	DiscountStart      *time.Time `db:"discount_start" json:"discount_start"`
+	DiscountEnd        *time.Time `db:"discount_end" json:"discount_end"`
 }
 
 type CartItem struct {
@@ -53,4 +57,14 @@ type OrderItem struct {
 	ProductName string  `db:"product_name" json:"productName"`
 	UnitPrice   float64 `db:"unit_price" json:"unitPrice"`
 	Quantity    int     `db:"quantity" json:"quantity"`
+}
+
+type Voucher struct {
+	ID                 string     `db:"id" json:"id"`
+	Code               string     `db:"code" json:"code" binding:"required"`
+	DiscountPercentage int        `db:"discount_percentage" json:"discount_percentage" binding:"required"`
+	MaxDiscountAmount  float64    `db:"max_discount_amount" json:"max_discount_amount"`
+	Quota              int        `db:"quota" json:"quota"`
+	ValidFrom          *time.Time `db:"valid_from" json:"valid_from"`
+	ValidUntil         *time.Time `db:"valid_until" json:"valid_until"`
 }
