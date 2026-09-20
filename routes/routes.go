@@ -31,6 +31,10 @@ func SetupRoutes(r *gin.Engine) {
 	voucherService := services.NewVoucherService(voucherRepo)
 	voucherController := controllers.NewVoucherController(voucherService)
 
+	bannerRepo := repositories.NewBannerRepository(config.DB)
+	bannerService := services.NewBannerService(bannerRepo)
+	bannerController := controllers.NewBannerController(bannerService)
+
 	api := r.Group("/api")
 	{
 		auth := api.Group("/auth")
@@ -87,6 +91,10 @@ func SetupRoutes(r *gin.Engine) {
 				voucherRoutes.POST("/", voucherController.CreateVoucher)
 				voucherRoutes.GET("/", voucherController.GetAllVoucher)
 			}
+
+			adminGroup.POST("/banners", bannerController.CreateBanner)
+			adminGroup.GET("/banners", bannerController.GetActiveBanners)
+			adminGroup.DELETE("/banners/:id", bannerController.DeleteBanner)
 		}
 	}
 }

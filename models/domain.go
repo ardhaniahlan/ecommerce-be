@@ -75,3 +75,11 @@ type Voucher struct {
 	ValidFrom          *time.Time `db:"valid_from" json:"valid_from"`
 	ValidUntil         *time.Time `db:"valid_until" json:"valid_until"`
 }
+
+type Banner struct {
+	ID        int       `db:"id" json:"id"`
+	Title     string    `db:"title" json:"title"`
+	ImageURL  string    `db:"image_url" json:"imageUrl"`
+	IsActive  bool      `db:"is_active" json:"isActive"`
+	CreatedAt time.Time `db:"created_at" json:"createdAt"`
+}
