@@ -18,7 +18,7 @@ type CheckoutResponse struct {
 }
 
 type OrderService interface {
-	CheckoutCart(userID string) (CheckoutResponse, error)
+	CheckoutCart(userID string, voucherCode string) (CheckoutResponse, error)
 	ProcessMidtransWebhook(payload map[string]interface{}) error
 
 	GetAllOrdersAdmin() ([]dto.AdminOrderResponse, error)
@@ -38,8 +38,8 @@ func NewOrderService(repo repositories.OrderRepository) OrderService {
 	return &orderService{repo}
 }
 
-func (s *orderService) CheckoutCart(userID string) (CheckoutResponse, error) {
-	orderID, grossAmount, err := s.repo.Checkout(userID)
+func (s *orderService) CheckoutCart(userID string, voucherCode string) (CheckoutResponse, error) {
+	orderID, grossAmount, err := s.repo.Checkout(userID, voucherCode)
 	if err != nil {
 		return CheckoutResponse{}, err
 	}

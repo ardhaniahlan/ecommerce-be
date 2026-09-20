@@ -28,3 +28,7 @@ type AdminDashboardStats struct {
 	TotalProducts   int     `json:"total_products"`
 	TotalUsers      int     `json:"total_users"`
 }
+
+type CheckoutRequest struct {
+	VoucherCode string `json:"voucher_code"`
+}

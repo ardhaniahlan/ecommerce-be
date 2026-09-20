@@ -20,7 +20,12 @@ func NewOrderController(service services.OrderService) *OrderController {
 func (c *OrderController) Checkout(ctx *gin.Context) {
 	userID := ctx.MustGet("user_id").(string)
 
-	result, err := c.service.CheckoutCart(userID)
+	var req dto.CheckoutRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		req.VoucherCode = ""
+	}
+
+	result, err := c.service.CheckoutCart(userID, req.VoucherCode)
 	if err != nil {
 		if err.Error() == "keranjang belanja kosong" {
 			utils.ErrorResponse(ctx, http.StatusBadRequest, "Checkout gagal", err.Error())

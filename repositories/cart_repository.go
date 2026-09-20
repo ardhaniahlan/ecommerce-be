@@ -3,17 +3,23 @@ package repositories
 import (
 	"database/sql"
 	"errors"
+	"time"
 
 	"github.com/jmoiron/sqlx"
 )
 
 type CartItemResponse struct {
-	ID          int     `db:"id" json:"id"`
-	ProductID   int     `db:"product_id" json:"productId"`
-	ProductName string  `db:"name" json:"productName"`
-	Price       float64 `db:"price" json:"price"`
-	ImageURL    *string `db:"image_url" json:"imageUrl"`
-	Quantity    int     `db:"quantity" json:"quantity"`
+	ID                 int        `db:"id" json:"id"`
+	ProductID          int        `db:"product_id" json:"productId"`
+	ProductName        string     `db:"name" json:"productName"`
+	OriginalPrice      float64    `db:"price" json:"originalPrice"`
+	ActivePrice        float64    `json:"activePrice"`
+	DiscountPercentage int        `db:"discount_percentage" json:"discountPercentage"`
+	DiscountStart      *time.Time `db:"discount_start" json:"-"`
+	DiscountEnd        *time.Time `db:"discount_end" json:"-"`
+	ImageURL           *string    `db:"image_url" json:"imageUrl"`
+	Quantity           int        `db:"quantity" json:"quantity"`
+	Subtotal           float64    `json:"subtotal"`
 }
 
 type CartRepository interface {
@@ -68,13 +74,27 @@ func (r *cartRepository) GetCartByUserID(userID string) ([]CartItemResponse, err
 	var items []CartItemResponse
 
 	query := `
-		SELECT c.id, c.product_id, p.name, p.price, p.image_url, c.quantity 
+		SELECT c.id, c.product_id, p.name, p.price, p.discount_percentage, p.discount_start, p.discount_end, p.image_url, c.quantity 
 		FROM cart_items c
 		JOIN products p ON c.product_id = p.id
 		WHERE c.user_id = $1
 		ORDER BY c.id DESC`
 
 	err := r.db.Select(&items, query, userID)
+
+	for i := range items {
+		activePrice, validPercentage := calculateActivePrice(
+			items[i].OriginalPrice,
+			items[i].DiscountPercentage,
+			items[i].DiscountStart,
+			items[i].DiscountEnd,
+		)
+
+		items[i].ActivePrice = activePrice
+		items[i].DiscountPercentage = validPercentage
+		items[i].Subtotal = activePrice * float64(items[i].Quantity)
+	}
+
 	return items, err
 }
 

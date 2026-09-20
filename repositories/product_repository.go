@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"ecommerce-backend/models"
+	"time"
 
 	"github.com/jmoiron/sqlx"
 )
@@ -95,4 +96,15 @@ func (r *productRepository) Delete(id int) error {
 	query := `UPDATE products SET is_active = false WHERE id = $1`
 	_, err := r.db.Exec(query, id)
 	return err
+}
+
+func calculateActivePrice(originalPrice float64, discountPercentage int, start, end *time.Time) (activePrice float64, validPercentage int) {
+	if discountPercentage > 0 && start != nil && end != nil {
+		now := time.Now()
+		if now.After(*start) && now.Before(*end) {
+			discountAmount := (originalPrice * float64(discountPercentage)) / 100
+			return originalPrice - discountAmount, discountPercentage
+		}
+	}
+	return originalPrice, 0 
 }
