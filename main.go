@@ -4,7 +4,9 @@ import (
 	"context"
 	"crypto/tls"
 	"ecommerce-backend/config"
+	"ecommerce-backend/middlewares"
 	"ecommerce-backend/routes"
+	"time"
 
 	"log"
 	"os"
@@ -23,6 +25,7 @@ func main() {
 
 	r := gin.Default()
 
+	
 	redisClient := redis.NewClient(&redis.Options{
 		Addr:     os.Getenv("REDIS_ADDR"),
 		Password: os.Getenv("REDIS_PASSWORD"),
@@ -32,10 +35,12 @@ func main() {
 			MinVersion: tls.VersionTLS12,
 		},
 	})
-
+	
 	if err := redisClient.Ping(context.Background()).Err(); err != nil {
 		panic("Gagal connect ke Redis: " + err.Error())
 	}
+	
+	r.Use(middlewares.RateLimiter(redisClient, 3, 1*time.Minute))
 
 	routes.SetupRoutes(r, redisClient)
 
