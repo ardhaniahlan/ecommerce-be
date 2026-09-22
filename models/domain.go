@@ -18,14 +18,17 @@ type User struct {
 }
 
 type Product struct {
-	ID          int            `db:"id" json:"id"`
-	Name        string         `db:"name" json:"name"`
-	Description *string        `db:"description" json:"description,omitempty"`
-	Images      []ProductImage `db:"-" json:"image_url"`
-	Price       float64        `db:"price" json:"price"`
-	Stock       int            `db:"stock" json:"stock"`
-	IsActive    bool           `db:"is_active" json:"isActive"`
-	CreatedAt   time.Time      `db:"created_at" json:"createdAt"`
+	ID          int     `db:"id" json:"id"`
+	Name        string  `db:"name" json:"name"`
+	Description *string `db:"description" json:"description,omitempty"`
+
+	Images          []ProductImage `db:"-" json:"image_url"`
+	PrimaryImageURL string         `db:"image_url" json:"primary_image"`
+
+	Price     float64   `db:"price" json:"price"`
+	Stock     int       `db:"stock" json:"stock"`
+	IsActive  bool      `db:"is_active" json:"isActive"`
+	CreatedAt time.Time `db:"created_at" json:"createdAt"`
 
 	DiscountPercentage int        `db:"discount_percentage" json:"discount_percentage"`
 	DiscountStart      *time.Time `db:"discount_start" json:"discount_start"`

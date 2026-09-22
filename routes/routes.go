@@ -8,11 +8,12 @@ import (
 	"ecommerce-backend/services"
 
 	"github.com/gin-gonic/gin"
+	"github.com/redis/go-redis/v9"
 )
 
-func SetupRoutes(r *gin.Engine) {
+func SetupRoutes(r *gin.Engine, redis *redis.Client) {
 	productRepo := repositories.NewProductRepository(config.DB)
-	productService := services.NewProductService(productRepo)
+	productService := services.NewProductService(productRepo, redis)
 	productController := controllers.NewProductController(productService)
 
 	cartRepo := repositories.NewCartRepository(config.DB)
@@ -32,8 +33,10 @@ func SetupRoutes(r *gin.Engine) {
 	voucherController := controllers.NewVoucherController(voucherService)
 
 	bannerRepo := repositories.NewBannerRepository(config.DB)
-	bannerService := services.NewBannerService(bannerRepo)
+	bannerService := services.NewBannerService(bannerRepo, redis)
 	bannerController := controllers.NewBannerController(bannerService)
+
+	
 
 	api := r.Group("/api")
 	{
@@ -93,8 +96,8 @@ func SetupRoutes(r *gin.Engine) {
 			}
 
 			adminGroup.POST("/banners", bannerController.CreateBanner)
-			adminGroup.GET("/banners", bannerController.GetActiveBanners)
 			adminGroup.DELETE("/banners/:id", bannerController.DeleteBanner)
 		}
 	}
+	api.GET("/banners", bannerController.GetActiveBanners)
 }

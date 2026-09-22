@@ -1,10 +1,15 @@
 package services
 
 import (
+	"context"
 	"ecommerce-backend/dto"
 	"ecommerce-backend/models"
 	"ecommerce-backend/repositories"
 	"ecommerce-backend/utils"
+	"fmt"
+	"time"
+
+	"github.com/redis/go-redis/v9"
 )
 
 type ProductService interface {
@@ -16,11 +21,17 @@ type ProductService interface {
 }
 
 type productService struct {
-	repo repositories.ProductRepository
+	repo  repositories.ProductRepository
+	redis *redis.Client
 }
 
-func NewProductService(repo repositories.ProductRepository) ProductService {
-	return &productService{repo}
+func NewProductService(repo repositories.ProductRepository, redisClient *redis.Client) ProductService {
+	return &productService{repo, redisClient}
+}
+
+type PaginatedProducts struct {
+	Products []models.Product `json:"products"`
+	Meta     utils.Pagination `json:"meta"`
 }
 
 func (s *productService) CreateProduct(input dto.CreateProductInput) (models.Product, error) {
@@ -35,20 +46,41 @@ func (s *productService) CreateProduct(input dto.CreateProductInput) (models.Pro
 	}
 
 	err := s.repo.Create(&product, input.ImageURLs)
+
+	if err == nil {
+		cacheKey := fmt.Sprintf("products:page:%d:limit:%d:search:%s", 1, 10, "")
+		s.redis.Del(context.Background(), cacheKey)
+	}
 	return product, err
 }
 
 func (s *productService) GetAllProducts(page, limit int, search string) ([]models.Product, utils.Pagination, error) {
-	products, totalItems, err := s.repo.GetAll(page, limit, search)
+	cacheKey := fmt.Sprintf("products:page:%d:limit:%d:search:%s", page, limit, search)
+
+	cachedData, err := utils.GetOrSetCache(context.Background(), s.redis, cacheKey, 2*time.Minute, func() (PaginatedProducts, error) {
+
+		products, totalItems, errRepo := s.repo.GetAll(page, limit, search)
+		if errRepo != nil {
+			return PaginatedProducts{}, errRepo
+		}
+
+		meta := utils.GeneratePagination(page, limit, totalItems)
+		return PaginatedProducts{Products: products, Meta: meta}, nil
+	})
+
 	if err != nil {
 		return nil, utils.Pagination{}, err
 	}
-	meta := utils.GeneratePagination(page, limit, totalItems)
-	return products, meta, nil
+
+	return cachedData.Products, cachedData.Meta, nil
 }
 
 func (s *productService) GetProductByID(id int) (models.Product, error) {
-	return s.repo.GetByID(id)
+	cacheKey := fmt.Sprintf("product:%d", id)
+
+	return utils.GetOrSetCache(context.Background(), s.redis, cacheKey, 5*time.Minute, func() (models.Product, error) {
+		return s.repo.GetByID(id)
+	})
 }
 
 func (s *productService) UpdateProduct(id int, input dto.CreateProductInput) (models.Product, error) {
@@ -66,9 +98,22 @@ func (s *productService) UpdateProduct(id int, input dto.CreateProductInput) (mo
 	product.DiscountEnd = input.DiscountEnd
 
 	err = s.repo.Update(&product, input.ImageURLs)
+
+	if err == nil {
+		cacheKey := fmt.Sprintf("product:%d", id)
+		s.redis.Del(context.Background(), cacheKey)
+	}
+
 	return product, err
 }
 
 func (s *productService) DeleteProduct(id int) error {
-	return s.repo.Delete(id)
+	err := s.repo.Delete(id)
+
+	if err == nil {
+		cacheKey := fmt.Sprintf("product:%d", id)
+		s.redis.Del(context.Background(), cacheKey)
+	}
+
+	return err
 }
