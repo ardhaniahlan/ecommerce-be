@@ -75,7 +75,7 @@ func (r *orderRepository) Checkout(userID string, voucherCode string) (orderID s
 		DiscountPercentage int        `db:"discount_percentage"`
 		DiscountStart      *time.Time `db:"discount_start"`
 		DiscountEnd        *time.Time `db:"discount_end"`
-		ActivePrice        float64    
+		ActivePrice        float64
 	}
 
 	queryCart := `
@@ -93,14 +93,12 @@ func (r *orderRepository) Checkout(userID string, voucherCode string) (orderID s
 		return "", 0, errors.New("keranjang belanja kosong")
 	}
 
-	// === 3. KALKULASI HARGA DISKON PRODUK & SUBTOTAL ===
 	for i := range cartItems {
 		if cartItems[i].Quantity > cartItems[i].Stock {
 			err = fmt.Errorf("stok produk '%s' tidak mencukupi", cartItems[i].ProductName)
 			return "", 0, err
 		}
 
-		// Panggil helper yang sama
 		activePrice, _ := calculateActivePrice(
 			cartItems[i].OriginalPrice,
 			cartItems[i].DiscountPercentage,
@@ -150,7 +148,14 @@ func (r *orderRepository) Checkout(userID string, voucherCode string) (orderID s
 
 		grossAmount -= discountApplied
 
-		if _, err = tx.Exec("UPDATE vouchers SET quota = quota - 1 WHERE id = $1", voucher.ID); err != nil {
+		result, err := tx.Exec("UPDATE vouchers SET quota = quota - 1 WHERE id = $1 AND quota > 0", voucher.ID)
+		if err != nil {
+			return "", 0, err
+		}
+
+		rowsAffected, _ := result.RowsAffected()
+		if rowsAffected == 0 {
+			err = errors.New("checkout dibatalkan: kuota voucher baru saja habis digunakan orang lain")
 			return "", 0, err
 		}
 	}

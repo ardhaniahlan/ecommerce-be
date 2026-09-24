@@ -10,6 +10,7 @@ import (
 type VoucherRepository interface {
 	CreateVoucher(v models.Voucher) error
 	GetAllVouchers() ([]models.Voucher, error)
+	GetVoucherByCode(code string) (models.Voucher, error)
 }
 
 type voucherRepository struct {
@@ -42,4 +43,12 @@ func (r *voucherRepository) GetAllVouchers() ([]models.Voucher, error) {
 		vouchers = []models.Voucher{}
 	}
 	return vouchers, nil
+}
+
+func (r *voucherRepository) GetVoucherByCode(code string) (models.Voucher, error) {
+	var voucher models.Voucher
+	query := `SELECT id, code, discount_percentage, max_discount_amount, quota, valid_from, valid_until FROM vouchers WHERE code = $1`
+	
+	err := r.db.Get(&voucher, query, code)
+	return voucher, err
 }

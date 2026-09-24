@@ -82,13 +82,14 @@ func (r *productRepository) GetAll(page int, limit int, search string) ([]models
 	}
 
 	query := `
-		SELECT p.id, p.name, p.description, p.price, p.stock, p.is_active, p.created_at,
-		       pi.image_url 
-		FROM products p
-		LEFT JOIN product_images pi ON p.id = pi.product_id AND pi.is_primary = true
-		WHERE p.is_active = true AND p.name ILIKE $1 
-		ORDER BY p.created_at DESC
-		LIMIT $2 OFFSET $3`
+  SELECT p.id, p.name, p.description, p.price, p.stock, p.is_active, p.created_at,
+         p.discount_percentage, p.discount_start, p.discount_end,
+         pi.image_url 
+  FROM products p
+  LEFT JOIN product_images pi ON p.id = pi.product_id AND pi.is_primary = true
+  WHERE p.is_active = true AND p.name ILIKE $1 
+  ORDER BY p.created_at DESC
+  LIMIT $2 OFFSET $3`
 
 	err = r.db.Select(&products, query, searchParam, limit, offset)
 	return products, totalItems, err
@@ -96,7 +97,7 @@ func (r *productRepository) GetAll(page int, limit int, search string) ([]models
 
 func (r *productRepository) GetByID(id int) (models.Product, error) {
 	var product models.Product
-	
+
 	queryProduct := `SELECT id, name, description, price, stock, discount_percentage, discount_start, discount_end, is_active, created_at FROM products WHERE id = $1`
 	err := r.db.Get(&product, queryProduct, id)
 	if err != nil {
@@ -105,7 +106,7 @@ func (r *productRepository) GetByID(id int) (models.Product, error) {
 
 	var images []models.ProductImage
 	queryImages := `SELECT id, product_id, image_url, is_primary FROM product_images WHERE product_id = $1 ORDER BY is_primary DESC`
-	
+
 	err = r.db.Select(&images, queryImages, id)
 	if err != nil {
 		return product, err

@@ -60,9 +60,10 @@ func (r *cartRepository) GetCartByUserID(userID string) ([]dto.CartItemResponse,
 	var items []dto.CartItemResponse
 
 	query := `
-		SELECT c.id, c.product_id, p.name, p.price, p.discount_percentage, p.discount_start, p.discount_end, p.image_url, c.quantity 
+		SELECT c.id, c.product_id, p.name, p.price, p.discount_percentage, p.discount_start, p.discount_end, pi.image_url, c.quantity, p.stock 
 		FROM cart_items c
 		JOIN products p ON c.product_id = p.id
+		LEFT JOIN product_images pi ON p.id = pi.product_id AND pi.is_primary = TRUE
 		WHERE c.user_id = $1
 		ORDER BY c.id DESC`
 

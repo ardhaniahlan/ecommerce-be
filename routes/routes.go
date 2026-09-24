@@ -36,8 +36,6 @@ func SetupRoutes(r *gin.Engine, redis *redis.Client) {
 	bannerService := services.NewBannerService(bannerRepo, redis)
 	bannerController := controllers.NewBannerController(bannerService)
 
-	
-
 	api := r.Group("/api")
 	{
 		auth := api.Group("/auth")
@@ -54,18 +52,18 @@ func SetupRoutes(r *gin.Engine, redis *redis.Client) {
 
 		products := api.Group("/products")
 		{
-			products.GET("/", productController.GetAll)
+			products.GET("", productController.GetAll)
 			products.GET("/:id", productController.GetByID)
 
-			products.POST("/", middlewares.RequireAuth(), middlewares.RequireAdmin(), productController.Create)
+			products.POST("", middlewares.RequireAuth(), middlewares.RequireAdmin(), productController.Create)
 			products.PUT("/:id", middlewares.RequireAuth(), middlewares.RequireAdmin(), productController.Update)
 			products.DELETE("/:id", middlewares.RequireAuth(), middlewares.RequireAdmin(), productController.Delete)
 		}
 
 		cart := api.Group("/cart", middlewares.RequireAuth())
 		{
-			cart.GET("/", cartController.GetCart)
-			cart.POST("/", cartController.AddItem)
+			cart.GET("", cartController.GetCart)
+			cart.POST("", cartController.AddItem)
 			cart.DELETE("/:id", cartController.RemoveItem)
 			cart.PUT("/:id", cartController.UpdateQuantity)
 		}
@@ -77,6 +75,11 @@ func SetupRoutes(r *gin.Engine, redis *redis.Client) {
 			userOrders.PUT("/:id/complete", orderController.CompleteOrder)
 		}
 
+		userVouchers := api.Group("/vouchers", middlewares.RequireAuth())
+		{
+			userVouchers.POST("/apply", voucherController.ApplyVoucher)
+		}
+
 		api.POST("/payments/webhook", orderController.Webhook)
 
 		adminGroup := api.Group("/admin", middlewares.RequireAuth(), middlewares.RequireAdmin())
@@ -85,14 +88,14 @@ func SetupRoutes(r *gin.Engine, redis *redis.Client) {
 
 			adminOrders := adminGroup.Group("/orders")
 			{
-				adminOrders.GET("/", orderController.GetAllOrdersAdmin)
+				adminOrders.GET("", orderController.GetAllOrdersAdmin)
 				adminOrders.PUT("/:id/tracking", orderController.InputTracking)
 			}
 
 			voucherRoutes := adminGroup.Group("/vouchers")
 			{
-				voucherRoutes.POST("/", voucherController.CreateVoucher)
-				voucherRoutes.GET("/", voucherController.GetAllVoucher)
+				voucherRoutes.POST("", voucherController.CreateVoucher)
+				voucherRoutes.GET("", voucherController.GetAllVoucher)
 			}
 
 			adminGroup.POST("/banners", bannerController.CreateBanner)

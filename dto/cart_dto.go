@@ -23,4 +23,5 @@ type CartItemResponse struct {
 	ImageURL           *string    `db:"image_url" json:"imageUrl"`
 	Quantity           int        `db:"quantity" json:"quantity"`
 	Subtotal           float64    `json:"subtotal"`
+	Stock              int        `json:"stock"`
 }
